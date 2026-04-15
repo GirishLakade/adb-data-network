@@ -1,0 +1,5 @@
+# Project dependencies
+# Add your requirements here, one per line.
+# Example:
+# numpy
+# pandas

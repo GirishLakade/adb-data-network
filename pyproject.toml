@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "adb-data-network"
+version = "0.1.0"
+authors = [
+  { name="Girish", email="your.email@example.com" },
+]
+description = "A data network analysis project"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/adb-data-network"
+"Bug Tracker" = "https://github.com/yourusername/adb-data-network/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
