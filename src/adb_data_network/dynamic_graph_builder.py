@@ -21,7 +21,6 @@ def build_d3_graph_from_genie(space_data):
 
     # Extract Serialized space
     serialized_space = json.loads(data.get("serialized_space", {}))
-    st.write(serialized_space)
     if not serialized_space:
         raise Warning("No serialized space found in the data")
         return serialized_space
@@ -42,7 +41,8 @@ def build_d3_graph_from_genie(space_data):
     # ---------------------------------------------------------
     # STEP 1: Build Nodes and Assign Groups
     # ---------------------------------------------------------
-    for t_id in table_ids:
+    for t in tables:
+        t_id = t["identifier"]
         # Extract just the table name (e.g., 'sales_transactions')
         table_name = t_id.split(".")[-1].lower()
         
@@ -60,8 +60,14 @@ def build_d3_graph_from_genie(space_data):
         else:
             group = 3
             other_tables.append(t_id)
+
+        # Extract attributes (columns) if available
+        columns = t.get("columns", [])
+        attr_list = ", ".join([c["name"] for c in columns[:5]]) # Show first 5 columns
+        if len(columns) > 5:
+            attr_list += "..."
             
-        nodes.append({"id": t_id, "group": group})
+        nodes.append({"id": t_id, "group": group, "attributes": attr_list})
 
     # ---------------------------------------------------------
     # STEP 2: Build Links (Infer Relationships)

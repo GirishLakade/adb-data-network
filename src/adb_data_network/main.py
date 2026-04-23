@@ -24,9 +24,69 @@ def show_d3_popup(data_dict):
     d3_code = f"""
     <div id="d3-container"></div>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {{
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            margin: 0;
+            overflow: hidden;
+        }}
+        #graph-container {{
+            width: 100vw;
+            height: 100vh;
+        }}
+        .node circle {{
+            stroke: #fff;
+            stroke-width: 2px;
+            cursor: pointer;
+        }}
+        .node text {{
+            font-size: 12px;
+            fill: #ffffff;
+            pointer-events: none;
+            text-anchor: middle;
+        }}
+        .link {{
+            stroke: #999;
+            stroke-opacity: 0.6;
+        }}
+        .link-label {{
+            font-size: 10px;
+            fill: #aaaaaa;
+            pointer-events: none;
+            text-anchor: middle;
+        }}
+        /* Tooltip styling */
+        #tooltip {{
+            position: absolute;
+            text-align: left;
+            padding: 12px;
+            font-size: 13px;
+            background: rgba(30, 30, 30, 0.95);
+            border: 1px solid #555;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            color: #e0e0e0;
+            z-index: 1000;
+        }}
+        .tooltip-title {{
+            font-weight: bold;
+            color: #64b5f6;
+            margin-bottom: 5px;
+            display: block;
+            border-bottom: 1px solid #444;
+            padding-bottom: 4px;
+        }}
+    </style>
+    <div id="tooltip"></div>
     <script>
+        const tooltip = d3.select("#tooltip");
         const data = {data_json};
-        const width = 800;
+        const width = window.innerWidth;
         const height = 500;
 
         const svg = d3.select("#d3-container").append("svg")
@@ -36,9 +96,10 @@ def show_d3_popup(data_dict):
 
         // Adjust link distance so table names don't overlap as much
         const simulation = d3.forceSimulation(data.nodes)
-            .force("link", d3.forceLink(data.links).id(d => d.id).distance(150))
+            .force("link", d3.forceLink(data.links).id(d => d.id).distance(100))
             .force("charge", d3.forceManyBody().strength(-300))
-            .force("center", d3.forceCenter(width / 2, height / 2));
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collide", d3.forceCollide().radius(d => d.radius + 10));
 
         const link = svg.append("g")
             .attr("stroke", "#999")
@@ -64,25 +125,37 @@ def show_d3_popup(data_dict):
                     d.fx = null; d.fy = null;
                 }}));
 
+
         // Color coding based on groups (1: Fact, 2: Dimension, 3: Media)
         node.append("circle")
-            .attr("r", 12)
+            .attr("r", 20)
             .attr("fill", d => {{
                 if(d.group === 1) return "#d9534f"; // Red for Transactions
                 if(d.group === 2) return "#5bc0de"; // Blue for Sales Dims
                 return "#f0ad4e"; // Yellow/Orange for Media
             }})
             .attr("stroke", "#fff")
-            .attr("stroke-width", 2);
+            .attr("stroke-width", 2)
+            .on("mouseover", (event, d) => {{
+                tooltip.transition().duration(200).style("opacity", 1);
+                tooltip.html(`<span class="tooltip-title">${{d.id}}</span>Attributes:<br><span style="color:#aaa">${{d.attributes || 'No attributes available'}}</span>`)
+                    .style("left", (event.pageX + 15) + "px")
+                    .style("top", (event.pageY - 15) + "px");
+                d3.select(event.currentTarget).attr("stroke", "#ffeb3b").attr("stroke-width", 4);
+            }})
+            .on("mouseout", (event, d) => {{
+                tooltip.transition().duration(500).style("opacity", 0);
+                d3.select(event.currentTarget).attr("stroke", "#fff").attr("stroke-width", 2);
+            }});
 
         // Add table names as visible text
         node.append("text")
             .text(d => d.id.split('.').pop()) // Only show the table name, hide 'samples.bakehouse.'
-            .attr("x", 18)
+            .attr("x", 25)
             .attr("y", 4)
             .style("font-family", "sans-serif")
             .style("font-size", "14px")
-            .style("fill", "#333")
+            .style("fill", "#ffffff")
             .style("pointer-events", "none"); // Prevents text from interfering with drag
 
         simulation.on("tick", () => {{
@@ -96,7 +169,7 @@ def show_d3_popup(data_dict):
         }});
     </script>
     <style>
-        #d3-container {{ border: 1px solid #ddd; background: #fdfdfd; border-radius: 8px; overflow: hidden; }}
+        #d3-container {{ border: 1px solid #444; background: #1e1e1e; border-radius: 8px; overflow: hidden; }}
     </style>
     """
     
@@ -113,7 +186,6 @@ st.title("WMA Analytics Hub")
 adb_instance=GenieAPI(instance_url, api_key)
 space_id = "01f0536b342c1fd9acf8b1800cfefcc8"
 bakehouse_data = build_d3_graph_from_genie(adb_instance.get_space_details(space_id))
-st.write(bakehouse_data)
-
+st.write(bakehouse_data) # debug
 if st.button("View Bakehouse Data Model"):
     show_d3_popup(bakehouse_data)
